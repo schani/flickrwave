@@ -21,6 +21,8 @@
 
     var have_content = false;
 
+    var per_page = 3;
+
     function debugPrint (txt) {
       //debug_text.innerHTML = txt;
     }
@@ -39,13 +41,10 @@
       wave.getState ().submitDelta ({'user_id': user_id_input.value});
     }
 
-    function jsonFlickrApi (rsp) {
-      if (rsp.stat != "ok") {
-        document.write("Error");
-        debugPrint ("Error!");
-	return;
-      }
-      debugPrint ("OK");
+    function createContent () {
+      dict = new Object ();
+      dict.anchors = new Array ();
+      dict.images = new Array ();
 
       var paragraph;
       if (!have_content) {
@@ -53,34 +52,29 @@
         content.appendChild (paragraph);
       }
 
-      var index;
-      for (index in rsp.photos.photo) {
-        var photo = rsp.photos.photo [index];
-        var photo_url = "http://farm" + photo.farm + ".static.flickr.com/" + photo.server + "/" + photo.id + "_" + photo.secret + "_" + "m.jpg";
-
-	var anchor_id = "a_" + index;
-	var img_id = "img_" + index;
-	var anchor;
-	var img;
+      var i;
+      for (i = 0; i < per_page; ++i) {
+	var anchor_id = "a_" + i;
+	var img_id = "img_" + i;
 
 	if (have_content) {
-	  anchor = document.getElementById (anchor_id);
-	  img = document.getElementById (img_id);
- 	} else {
-          anchor = document.createElement ("a");
+	  dict.anchors [i] = document.getElementById (anchor_id);
+	  dict.images [i] = document.getElementById (img_id);
+	} else {
+          var anchor = document.createElement ("a");
 	  anchor.id = anchor_id;
           anchor.target = "_flickr";
-	  img = document.createElement ("img");
+	  var img = document.createElement ("img");
 	  img.onload = function () { gadgets.window.adjustHeight (); }
 	  img.id = img_id;
           img.hspace = "3";
           img.vspace = "3";
 	  anchor.appendChild (img);
 	  paragraph.appendChild (anchor);
-	}
 
-        img.src = photo_url;
-        anchor.href = "http://www.flickr.com/photos/" + photo.owner + "/" + photo.id + "/";
+	  dict.anchors [i] = anchor;
+	  dict.images [i] = img;
+	}
       }
 
       if (!have_content) {
@@ -101,11 +95,36 @@
         // back in time to when we didn't have a user_id
         var form = document.getElementById ("form");
         form.parentNode.removeChild (form);
-
-	have_content = true;
       }
 
       gadgets.window.adjustHeight ();
+
+      have_content = true;
+
+      return dict;
+    }
+
+    function jsonFlickrApi (rsp) {
+      if (rsp.stat != "ok") {
+        document.write("Error");
+        debugPrint ("Error!");
+	return;
+      }
+      debugPrint ("OK");
+
+      var content_dict = createContent ();
+
+      var index;
+      for (index in rsp.photos.photo) {
+        var photo = rsp.photos.photo [index];
+        var photo_url = "http://farm" + photo.farm + ".static.flickr.com/" + photo.server + "/" + photo.id + "_" + photo.secret + "_" + "m.jpg";
+
+	var anchor = content_dict.anchors [index];
+	var img = content_dict.images [index];
+
+        img.src = photo_url;
+        anchor.href = "http://www.flickr.com/photos/" + photo.owner + "/" + photo.id + "/";
+      }
 
       debugPrint ("Done 22");
     }
@@ -132,7 +151,8 @@
 	else
 	  page = "1";
         debugPrint ("Fetching " + user_id + " page " + page);
-        callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=3&page=" + page);
+        callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=" + per_page + "&page=" + page);
+	callFlickr ("flickr.people.getInfo", "user_id=" + encodeURIComponent (user_id));
       }
     }
 
