@@ -170,7 +170,12 @@
       } else if (rsp.person) {
 	content_dict.buddy_anchor.href = "http://www.flickr.com/photos/" + rsp.person.nsid + "/";
         content_dict.buddy_image.src = "http://farm" + rsp.person.iconfarm + ".static.flickr.com/" + rsp.person.iconserver + "/buddyicons/" + rsp.person.nsid + ".jpg";
-        content_dict.buddy_name.innerHTML = " " + rsp.person.realname._content;
+        var name;
+        if (rsp.person.realname)
+          name = rsp.person.realname._content;
+        else
+          name = rsp.person.username._content;
+        content_dict.buddy_name.innerHTML = " " + name;
       }
 
       debugPrint ("Done 22");
