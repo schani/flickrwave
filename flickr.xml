@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+<ModulePrefs title="Flickr Test" height="120">
+  <Require feature="wave" />
+</ModulePrefs>
+<Content type="html">
+<![CDATA[
+    <h3 id="content_div">not inited</h3>
+    <img id="image"></img>
+    <div id="form">
+    <input type=text value="28311604@N00" id="user_id">
+    <input type=button value="Go!" id="butCount" onClick="fetch()">
+    </div>
+    <script type="text/javascript">
+
+    var api_key = "07b09f24ad41a2c8020a53fea673a618";
+    var div = document.getElementById('content_div');
+    var user_id_input = document.getElementById('user_id');
+    var img = document.getElementById('image');
+
+    function callFlickr (method, args) {
+      var url = "http://api.flickr.com/services/rest/?method=" + method + "&api_key=" + encodeURIComponent(api_key) + "&format=json";
+      if (args)
+        url += "&" + args;
+      var script = document.createElement("script");
+      script.setAttribute("src",url);
+      script.setAttribute("type","text/javascript");
+      document.body.appendChild(script);
+    }
+
+    function fetch () {
+      var user_id = user_id_input.value;
+      div.innerHTML = "Fetching " + user_id;
+      callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=1");
+    }
+
+    function jsonFlickrApi (rsp) {
+      if (rsp.stat != "ok") {
+        document.write("Error");
+        div.innerHTML = "Error!";
+	return;
+      }
+      div.innerHTML = "OK";
+      var photo = rsp.photos.photo[0];
+      var photo_url = "http://farm" + photo.farm + ".static.flickr.com/" + photo.server + "/" + photo.id + "_" + photo.secret + "_" + "t.jpg";
+      img.src = photo_url;
+      div.innerHTML = "Done";
+
+      var form = document.getElementById ("form");
+      form.parentNode.removeChild (form);
+    }
+
+    function stateUpdated() {
+      if(!wave.getState().get('count')) {
+      //        div.innerHTML = "The count is 0."
+      }
+      else {
+      //        div.innerHTML = "The count is " + wave.getState().get('count');
+      }
+    }
+
+    function init() {
+      if (wave && wave.isInWaveContainer()) {
+        wave.setStateCallback(stateUpdated);
+      }
+    }
+    gadgets.util.registerOnLoadHandler(init);
+  ]]>
+  </Content>
+</Module>
