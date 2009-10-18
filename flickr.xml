@@ -140,6 +140,15 @@
       return dict;
     }
 
+    function getPage () {
+      var page = wave.getState ().get ("page");
+      if (!page)
+        page = 1;
+      else
+        page = parseInt (page);
+      return page;
+    }
+
     function jsonFlickrApi (rsp) {
       if (rsp.stat != "ok") {
         document.write("Error");
@@ -183,11 +192,7 @@
 
     function advance (delta) {
       debugPrint ("Advancing " + delta);
-      var page = wave.getState ().get ("page");
-      if (!page)
-        page = 1;
-      else
-        page = parseInt (page);
+      var page = getPage ();
       page += delta;
       if (page < 1)
         page = 1;
@@ -197,11 +202,7 @@
     function stateUpdated () {
       if (wave.getState ().get ('user_id')) {
         var user_id = wave.getState ().get ('user_id');
-	var page = wave.getState ().get ('page');
-	if (page)
-	  page = parseInt (page);
-	else
-	  page = "1";
+        var page = getPage ();
         debugPrint ("Fetching " + user_id + " page " + page);
         callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=" + per_page + "&page=" + page);
 	callFlickr ("flickr.people.getInfo", "user_id=" + encodeURIComponent (user_id));
