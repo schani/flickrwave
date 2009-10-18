@@ -49,6 +49,7 @@
       var paragraph;
       if (have_content) {
         dict.buddy_image = document.getElementById ("buddy");
+        dict.buddy_name = document.getElementById ("buddy_name");
       } else {
         paragraph = document.createElement ("div");
 	content.appendChild (paragraph);
@@ -58,8 +59,15 @@
 	buddy_img.id = "buddy";
 	buddy_img.hspace = 3;
 	buddy_img.vspace = 3;
+        buddy_img.align = "middle";
 	paragraph.appendChild (buddy_img);
         dict.buddy_image = buddy_img;
+
+        var buddy_name = document.createElement ("font");
+        buddy_name.id = "buddy_name";
+        buddy_name.size = "+2";
+        paragraph.appendChild (buddy_name);
+        dict.buddy_name = buddy_name;
 
         paragraph = document.createElement ("div");
         content.appendChild (paragraph);
@@ -141,6 +149,7 @@
         }
       } else if (rsp.person) {
         content_dict.buddy_image.src = "http://farm" + rsp.person.iconfarm + ".static.flickr.com/" + rsp.person.iconserver + "/buddyicons/" + rsp.person.nsid + ".jpg";
+        content_dict.buddy_name.innerHTML = " " + rsp.person.realname._content;
       }
 
       debugPrint ("Done 22");
