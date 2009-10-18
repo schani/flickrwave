@@ -47,7 +47,20 @@
       dict.images = new Array ();
 
       var paragraph;
-      if (!have_content) {
+      if (have_content) {
+        dict.buddy_image = document.getElementById ("buddy");
+      } else {
+        paragraph = document.createElement ("div");
+	content.appendChild (paragraph);
+
+	var buddy_img = document.createElement ("img");
+	buddy_img.onload = function () { gadgets.window.adjustHeight (); }
+	buddy_img.id = "buddy";
+	buddy_img.hspace = 3;
+	buddy_img.vspace = 3;
+	paragraph.appendChild (buddy_img);
+        dict.buddy_image = buddy_img;
+
         paragraph = document.createElement ("div");
         content.appendChild (paragraph);
       }
@@ -114,16 +127,20 @@
 
       var content_dict = createContent ();
 
-      var index;
-      for (index in rsp.photos.photo) {
-        var photo = rsp.photos.photo [index];
-        var photo_url = "http://farm" + photo.farm + ".static.flickr.com/" + photo.server + "/" + photo.id + "_" + photo.secret + "_" + "m.jpg";
+      if (rsp.photos) {
+        var index;
+        for (index in rsp.photos.photo) {
+          var photo = rsp.photos.photo [index];
+          var photo_url = "http://farm" + photo.farm + ".static.flickr.com/" + photo.server + "/" + photo.id + "_" + photo.secret + "_" + "m.jpg";
 
-	var anchor = content_dict.anchors [index];
-	var img = content_dict.images [index];
+    	var anchor = content_dict.anchors [index];
+    	var img = content_dict.images [index];
 
-        img.src = photo_url;
-        anchor.href = "http://www.flickr.com/photos/" + photo.owner + "/" + photo.id + "/";
+          img.src = photo_url;
+          anchor.href = "http://www.flickr.com/photos/" + photo.owner + "/" + photo.id + "/";
+        }
+      } else if (rsp.person) {
+        content_dict.buddy_image.src = "http://farm" + rsp.person.iconfarm + ".static.flickr.com/" + rsp.person.iconserver + "/buddyicons/" + rsp.person.nsid + ".jpg";
       }
 
       debugPrint ("Done 22");
