@@ -5,7 +5,7 @@ paste this URL:
 
   http://github.com/schani/flickrwave/raw/master/flickr.xml
 
-Enter your Flickr account's NSID and click "Go!".  To find out your
+Enter your Flickr username or NSID and click "Go!".  To find out your
 NSID, be logged in on Flickr and go here:
 
   http://www.flickr.com/services/api/explore/?method=flickr.people.getInfo
