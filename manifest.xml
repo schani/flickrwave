@@ -1,0 +1,10 @@
+<extension
+    name="FlickrWave"
+    thumbnailUrl="http://github.com/schani/flickrwave/raw/master/logo120.png"
+    description="Browse a user's Flickr photos.">
+  <author name="Mark Probst"/>
+  <menuHook location="toolbar" text="Add FlickrWave"
+      iconUrl="http://github.com/schani/flickrwave/raw/master/logo24alpha.png">
+    <insertGadget url="http://github.com/schani/flickrwave/raw/master/flickr.xml"/>
+  </menuHook>
+</extension>

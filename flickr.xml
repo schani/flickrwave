@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Module>
-<ModulePrefs title="Flickr Test" height="120">
+<ModulePrefs title="FlickrWave" height="120">
   <Require feature="wave" />
   <Require feature="dynamic-height" />
 </ModulePrefs>
