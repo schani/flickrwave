@@ -2,10 +2,11 @@
 <Module>
 <ModulePrefs title="Flickr Test" height="120">
   <Require feature="wave" />
+  <Require feature="dynamic-height" />
 </ModulePrefs>
 <Content type="html">
 <![CDATA[
-    <h3 id="debug">not inited</h3>
+    <div id="debug">not inited</div>
     <div id="content_div"></div>
     <div id="form">
       User ID: <input type=text value="28311604@N00" id="user_id">
@@ -17,6 +18,8 @@
     var debug_text = document.getElementById('debug');
     var content = document.getElementById('content_div');
     var user_id_input = document.getElementById('user_id');
+
+    var have_content = false;
 
     var user_id = null;
 
@@ -41,32 +44,91 @@
 	return;
       }
       debug_text.innerHTML = "OK";
+
+      var paragraph;
+      if (!have_content) {
+        paragraph = document.createElement ("div");
+        content.appendChild (paragraph);
+      }
+
       var index;
       for (index in rsp.photos.photo) {
         var photo = rsp.photos.photo [index];
         var photo_url = "http://farm" + photo.farm + ".static.flickr.com/" + photo.server + "/" + photo.id + "_" + photo.secret + "_" + "t.jpg";
-        var img = document.createElement ("img");
-        img.src = photo_url;
-        img.hspace = "3";
-        var anchor = document.createElement ("a");
-        anchor.href = "http://www.flickr.com/photos/" + photo.owner + "/" + photo.id + "/";
-        anchor.target = "_flickr";
-        anchor.appendChild (img);
-        content.appendChild (anchor);
-      }
-      debug_text.innerHTML = "Done 6";
 
-      // FIXME: we should probably not do this because we can't go
-      // back in time to when we didn't have a user_id
-      var form = document.getElementById ("form");
-      form.parentNode.removeChild (form);
+	var anchor_id = "a_" + index;
+	var img_id = "img_" + index;
+	var anchor;
+	var img;
+
+	if (have_content) {
+	  anchor = document.getElementById (anchor_id);
+	  img = document.getElementById (img_id);
+ 	} else {
+          anchor = document.createElement ("a");
+	  anchor.id = anchor_id;
+          anchor.target = "_flickr";
+	  img = document.createElement ("img");
+	  img.id = img_id;
+          img.hspace = "3";
+	  anchor.appendChild (img);
+	  paragraph.appendChild (anchor);
+	}
+
+        img.src = photo_url;
+        anchor.href = "http://www.flickr.com/photos/" + photo.owner + "/" + photo.id + "/";
+      }
+
+      if (!have_content) {
+        paragraph = document.createElement ("div");
+        var button = document.createElement ("input");
+        button.type = "button";
+        button.value = "<<";
+        button.onclick = function () { advance(-1); };
+        paragraph.appendChild (button);
+        button = document.createElement ("input");
+        button.type = "button";
+        button.value = ">>";
+        button.onclick = function () { advance(1); };
+        paragraph.appendChild (button);
+        content.appendChild (paragraph);
+
+        // FIXME: we should probably not do this because we can't go
+        // back in time to when we didn't have a user_id
+        var form = document.getElementById ("form");
+        form.parentNode.removeChild (form);
+
+	have_content = true;
+      }
+
+      gadgets.window.adjustHeight ();
+
+      debug_text.innerHTML = "Done 19";
+    }
+
+    function advance (delta) {
+      debug_text.innerHTML = "Advancing " + delta;
+      var page = wave.getState ().get ("page");
+      if (!page)
+        page = 1;
+      else
+        page = parseInt (page);
+      page += delta;
+      if (page < 1)
+        page = 1;
+      wave.getState ().submitDelta ({'page': page});
     }
 
     function stateUpdated () {
       if (wave.getState ().get ('user_id')) {
         user_id = wave.getState ().get ('user_id');
-        debug_text.innerHTML = "Fetching " + user_id;
-        callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=3");
+	var page = wave.getState ().get ('page');
+	if (page)
+	  page = parseInt (page);
+	else
+	  page = "1";
+        debug_text.innerHTML = "Fetching " + user_id + " page " + page;
+        callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=3&page=" + page);
       } else {
         user_id = null;
       }
