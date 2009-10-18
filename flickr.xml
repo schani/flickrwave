@@ -9,8 +9,10 @@
     <!-- <div id="debug">not inited</div> -->
     <div id="content_div"></div>
     <div id="form">
-      User ID: <input type=text value="28311604@N00" id="user_id">
-	<input type=button value="Go!" id="butCount" onClick="fetch()">
+      Username: <input type=text value="schani" id="user_name">
+	<input type=button value="Go!" onClick="fetchFromUsername()"><br>
+      NSID: <input type=text value="28311604@N00" id="user_id">
+	<input type=button value="Go!" onClick="fetchFromNSID()">
     </div>
     <script type="text/javascript">
 
@@ -18,6 +20,7 @@
     //var debug_text = document.getElementById('debug');
     var content = document.getElementById('content_div');
     var user_id_input = document.getElementById('user_id');
+    var user_name_input = document.getElementById('user_name');
 
     var have_content = false;
 
@@ -37,8 +40,12 @@
       document.body.appendChild(script);
     }
 
-    function fetch () {
+    function fetchFromNSID () {
       wave.getState ().submitDelta ({'user_id': user_id_input.value});
+    }
+
+    function fetchFromUsername () {
+      callFlickr ("flickr.people.findByUsername", "username=" + encodeURIComponent (user_name_input.value));
     }
 
     function createContent () {
@@ -140,6 +147,11 @@
 	return;
       }
       debugPrint ("OK");
+
+      if (rsp.user) {
+        wave.getState ().submitDelta ({'user_id': rsp.user.nsid});
+        return;
+      }
 
       var content_dict = createContent ();
 
