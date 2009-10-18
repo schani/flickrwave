@@ -1,0 +1,49 @@
+<html>
+<head>
+</head>
+<body onLoad="onLoad()">
+<h1 id="content_div">xyz</h1>
+<form id="form">
+User ID: <input id="user_id" type="text"><input onClick="fetch();" type="button" value="Go!">
+</form>
+<img id="image"></img>
+<script type="text/javascript">
+    var api_key = "07b09f24ad41a2c8020a53fea673a618";
+    var div = document.getElementById('content_div');
+    var user_id_input = document.getElementById('user_id');
+    var img = document.getElementById('image');
+
+    function jsonp (url) {
+      var script = document.createElement("script");
+      script.setAttribute("src",url);
+      script.setAttribute("type","text/javascript");
+      document.body.appendChild(script);
+    }
+
+    function fetch () {
+      var user_id = user_id_input.value;
+      div.innerHTML = "Fetching " + user_id;
+      jsonp ("http://api.flickr.com/services/rest/?method=flickr.people.getPublicPhotos&api_key=" + encodeURIComponent(api_key) + "&user_id=" + encodeURIComponent (user_id) + "&per_page=1&format=json");
+    }
+
+    function jsonFlickrApi (rsp) {
+      if (rsp.stat != "ok") {
+        document.write("Error");
+        div.innerHTML = "Error!";
+	return;
+      }
+      div.innerHTML = "OK";
+      var photo = rsp.photos.photo[0];
+      var photo_url = "http://farm" + photo.farm + ".static.flickr.com/" + photo.server + "/" + photo.id + "_" + photo.secret + "_" + "t.jpg";
+      img.src = photo_url;
+      div.innerHTML = "Done";
+
+      var form = document.getElementById ("form");
+      form.parentNode.removeChild (form);
+    }
+
+function onLoad () {
+}
+</script>
+</body>
+</html>
