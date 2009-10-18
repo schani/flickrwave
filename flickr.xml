@@ -5,18 +5,18 @@
 </ModulePrefs>
 <Content type="html">
 <![CDATA[
-    <h3 id="content_div">not inited</h3>
-    <img id="image"></img>
+    <h3 id="debug">not inited</h3>
+    <div id="content_div"></div>
     <div id="form">
-    <input type=text value="28311604@N00" id="user_id">
-    <input type=button value="Go!" id="butCount" onClick="fetch()">
+      User ID: <input type=text value="28311604@N00" id="user_id">
+	<input type=button value="Go!" id="butCount" onClick="fetch()">
     </div>
     <script type="text/javascript">
 
     var api_key = "07b09f24ad41a2c8020a53fea673a618";
-    var div = document.getElementById('content_div');
+    var debug_text = document.getElementById('debug');
+    var content = document.getElementById('content_div');
     var user_id_input = document.getElementById('user_id');
-    var img = document.getElementById('image');
 
     var user_id = null;
 
@@ -37,14 +37,16 @@
     function jsonFlickrApi (rsp) {
       if (rsp.stat != "ok") {
         document.write("Error");
-        div.innerHTML = "Error!";
+        debug_text.innerHTML = "Error!";
 	return;
       }
-      div.innerHTML = "OK";
+      debug_text.innerHTML = "OK";
       var photo = rsp.photos.photo[0];
       var photo_url = "http://farm" + photo.farm + ".static.flickr.com/" + photo.server + "/" + photo.id + "_" + photo.secret + "_" + "t.jpg";
+      var img = document.createElement ("img");
       img.src = photo_url;
-      div.innerHTML = "Done";
+      content.appendChild (img);
+      debug_text.innerHTML = "Done 2";
 
       // FIXME: we should probably not do this because we can't go
       // back in time to when we didn't have a user_id
@@ -55,7 +57,7 @@
     function stateUpdated () {
       if (wave.getState ().get ('user_id')) {
         user_id = wave.getState ().get ('user_id');
-        div.innerHTML = "Fetching " + user_id;
+        debug_text.innerHTML = "Fetching " + user_id;
         callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=1");
       } else {
         user_id = null;
