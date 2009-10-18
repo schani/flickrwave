@@ -113,8 +113,17 @@
 	}
       }
 
-      if (!have_content) {
+      if (have_content) {
+        dict.counter = document.getElementById ("counter");
+      } else {
         paragraph = document.createElement ("div");
+
+        var counter = document.createElement ("font");
+	counter.id = "counter";
+	counter.size = "-2";
+        paragraph.appendChild (counter);
+	dict.counter = counter;
+
         var button = document.createElement ("input");
         button.type = "button";
         button.value = "<<";
@@ -179,12 +188,17 @@
       } else if (rsp.person) {
 	content_dict.buddy_anchor.href = "http://www.flickr.com/photos/" + rsp.person.nsid + "/";
         content_dict.buddy_image.src = "http://farm" + rsp.person.iconfarm + ".static.flickr.com/" + rsp.person.iconserver + "/buddyicons/" + rsp.person.nsid + ".jpg";
+
         var name;
         if (rsp.person.realname)
           name = rsp.person.realname._content;
         else
           name = rsp.person.username._content;
         content_dict.buddy_name.innerHTML = " " + name;
+
+        var page = getPage ();
+        var first = page * per_page;
+	content_dict.counter.innerHTML = "" + first + "-" + (first+per_page-1) + " of " + rsp.person.photos.count._content + " photos ";
       }
 
       debugPrint ("Done 22");
