@@ -21,8 +21,6 @@
 
     var have_content = false;
 
-    var user_id = null;
-
     function callFlickr (method, args) {
       var url = "http://api.flickr.com/services/rest/?method=" + method + "&api_key=" + encodeURIComponent(api_key) + "&format=json";
       if (args)
@@ -121,7 +119,7 @@
 
     function stateUpdated () {
       if (wave.getState ().get ('user_id')) {
-        user_id = wave.getState ().get ('user_id');
+        var user_id = wave.getState ().get ('user_id');
 	var page = wave.getState ().get ('page');
 	if (page)
 	  page = parseInt (page);
@@ -129,8 +127,6 @@
 	  page = "1";
         debug_text.innerHTML = "Fetching " + user_id + " page " + page;
         callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=3&page=" + page);
-      } else {
-        user_id = null;
       }
     }
 
