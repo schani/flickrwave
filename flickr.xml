@@ -67,8 +67,10 @@
 	  anchor.id = anchor_id;
           anchor.target = "_flickr";
 	  img = document.createElement ("img");
+	  img.onload = function () { gadgets.window.adjustHeight (); }
 	  img.id = img_id;
           img.hspace = "3";
+          img.vspace = "3";
 	  anchor.appendChild (img);
 	  paragraph.appendChild (anchor);
 	}
