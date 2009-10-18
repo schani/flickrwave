@@ -12,7 +12,8 @@
       Username: <input type=text value="schani" id="user_name">
 	<input type=button value="Go!" onClick="fetchFromUsername()"><br>
       NSID: <input type=text value="28311604@N00" id="user_id">
-	<input type=button value="Go!" onClick="fetchFromNSID()">
+	<input type=button value="Go!" onClick="fetchFromNSID()"><br>
+      Number of photos: <input type=text value="3" id="per_page">
     </div>
     <script type="text/javascript">
 
@@ -21,10 +22,9 @@
     var content = document.getElementById('content_div');
     var user_id_input = document.getElementById('user_id');
     var user_name_input = document.getElementById('user_name');
+    var per_page_input = document.getElementById ('per_page');
 
     var have_content = false;
-
-    var per_page = 3;
 
     function debugPrint (txt) {
       //debug_text.innerHTML = txt;
@@ -40,12 +40,37 @@
       document.body.appendChild(script);
     }
 
+    function getPerPageFromInput () {
+      var per_page = parseInt (per_page_input.value);
+      if (per_page < 1)
+	per_page = 3;
+      return per_page;
+    }
+
     function fetchFromNSID () {
-      wave.getState ().submitDelta ({'user_id': user_id_input.value});
+      wave.getState ().submitDelta ({'user_id': user_id_input.value, 'per_page': getPerPageFromInput ()});
     }
 
     function fetchFromUsername () {
       callFlickr ("flickr.people.findByUsername", "username=" + encodeURIComponent (user_name_input.value));
+    }
+
+    function getPage () {
+      var page = wave.getState ().get ("page");
+      if (!page)
+        page = 1;
+      else
+        page = parseInt (page);
+      return page;
+    }
+
+    function getPerPage () {
+      var per_page = wave.getState ().get ("per_page");
+      if (!per_page)
+        per_page = 3;
+      else
+        per_page = parseInt (per_page);
+      return per_page;
     }
 
     function createContent () {
@@ -89,7 +114,7 @@
       }
 
       var i;
-      for (i = 0; i < per_page; ++i) {
+      for (i = 0; i < getPerPage (); ++i) {
 	var anchor_id = "a_" + i;
 	var img_id = "img_" + i;
 
@@ -105,6 +130,7 @@
 	  img.id = img_id;
           img.hspace = "3";
           img.vspace = "3";
+          img.align = "middle";
 	  anchor.appendChild (img);
 	  paragraph.appendChild (anchor);
 
@@ -149,15 +175,6 @@
       return dict;
     }
 
-    function getPage () {
-      var page = wave.getState ().get ("page");
-      if (!page)
-        page = 1;
-      else
-        page = parseInt (page);
-      return page;
-    }
-
     function jsonFlickrApi (rsp) {
       if (rsp.stat != "ok") {
         document.write("Error");
@@ -167,7 +184,7 @@
       debugPrint ("OK");
 
       if (rsp.user) {
-        wave.getState ().submitDelta ({'user_id': rsp.user.nsid});
+        wave.getState ().submitDelta ({'user_id': rsp.user.nsid, 'per_page': getPerPageFromInput ()});
         return;
       }
 
@@ -197,6 +214,7 @@
         content_dict.buddy_name.innerHTML = " " + name;
 
         var page = getPage ();
+	var per_page = getPerPage();
         var first = (page - 1) * per_page + 1;
 	content_dict.counter.innerHTML = "" + first + "-" + (first+per_page-1) + " of " + rsp.person.photos.count._content + " photos ";
       }
@@ -217,6 +235,7 @@
       if (wave.getState ().get ('user_id')) {
         var user_id = wave.getState ().get ('user_id');
         var page = getPage ();
+	var per_page = getPerPage ();
         debugPrint ("Fetching " + user_id + " page " + page);
         callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=" + per_page + "&page=" + page);
 	callFlickr ("flickr.people.getInfo", "user_id=" + encodeURIComponent (user_id));
