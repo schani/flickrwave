@@ -48,11 +48,17 @@
 
       var paragraph;
       if (have_content) {
+        dict.buddy_anchor = document.getElementById ("buddy_anchor");
         dict.buddy_image = document.getElementById ("buddy");
         dict.buddy_name = document.getElementById ("buddy_name");
       } else {
         paragraph = document.createElement ("div");
 	content.appendChild (paragraph);
+
+        var buddy_anchor = document.createElement ("a");
+        buddy_anchor.id = "buddy_anchor";
+        buddy_anchor.target = "_flickr";
+        dict.buddy_anchor = buddy_anchor;
 
 	var buddy_img = document.createElement ("img");
 	buddy_img.onload = function () { gadgets.window.adjustHeight (); }
@@ -60,8 +66,10 @@
 	buddy_img.hspace = 3;
 	buddy_img.vspace = 3;
         buddy_img.align = "middle";
-	paragraph.appendChild (buddy_img);
         dict.buddy_image = buddy_img;
+
+        buddy_anchor.appendChild (buddy_img);
+	paragraph.appendChild (buddy_anchor);
 
         var buddy_name = document.createElement ("font");
         buddy_name.id = "buddy_name";
@@ -148,6 +156,7 @@
           anchor.href = "http://www.flickr.com/photos/" + photo.owner + "/" + photo.id + "/";
         }
       } else if (rsp.person) {
+	content_dict.buddy_anchor.href = "http://www.flickr.com/photos/" + rsp.person.nsid + "/";
         content_dict.buddy_image.src = "http://farm" + rsp.person.iconfarm + ".static.flickr.com/" + rsp.person.iconserver + "/buddyicons/" + rsp.person.nsid + ".jpg";
         content_dict.buddy_name.innerHTML = " " + rsp.person.realname._content;
       }
