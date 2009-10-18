@@ -21,6 +21,10 @@
 
     var have_content = false;
 
+    function debugPrint (txt) {
+      debug_text.innerHTML = txt;
+    }
+
     function callFlickr (method, args) {
       var url = "http://api.flickr.com/services/rest/?method=" + method + "&api_key=" + encodeURIComponent(api_key) + "&format=json";
       if (args)
@@ -38,10 +42,10 @@
     function jsonFlickrApi (rsp) {
       if (rsp.stat != "ok") {
         document.write("Error");
-        debug_text.innerHTML = "Error!";
+        debugPrint ("Error!");
 	return;
       }
-      debug_text.innerHTML = "OK";
+      debugPrint ("OK");
 
       var paragraph;
       if (!have_content) {
@@ -103,11 +107,11 @@
 
       gadgets.window.adjustHeight ();
 
-      debug_text.innerHTML = "Done 19";
+      debugPrint ("Done 22");
     }
 
     function advance (delta) {
-      debug_text.innerHTML = "Advancing " + delta;
+      debugPrint ("Advancing " + delta);
       var page = wave.getState ().get ("page");
       if (!page)
         page = 1;
@@ -127,7 +131,7 @@
 	  page = parseInt (page);
 	else
 	  page = "1";
-        debug_text.innerHTML = "Fetching " + user_id + " page " + page;
+        debugPrint ("Fetching " + user_id + " page " + page);
         callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=3&page=" + page);
       }
     }
