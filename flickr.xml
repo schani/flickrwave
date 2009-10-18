@@ -41,12 +41,20 @@
 	return;
       }
       debug_text.innerHTML = "OK";
-      var photo = rsp.photos.photo[0];
-      var photo_url = "http://farm" + photo.farm + ".static.flickr.com/" + photo.server + "/" + photo.id + "_" + photo.secret + "_" + "t.jpg";
-      var img = document.createElement ("img");
-      img.src = photo_url;
-      content.appendChild (img);
-      debug_text.innerHTML = "Done 2";
+      var index;
+      for (index in rsp.photos.photo) {
+        var photo = rsp.photos.photo [index];
+        var photo_url = "http://farm" + photo.farm + ".static.flickr.com/" + photo.server + "/" + photo.id + "_" + photo.secret + "_" + "t.jpg";
+        var img = document.createElement ("img");
+        img.src = photo_url;
+        img.hspace = "3";
+        var anchor = document.createElement ("a");
+        anchor.href = "http://www.flickr.com/photos/" + photo.owner + "/" + photo.id + "/";
+        anchor.target = "_flickr";
+        anchor.appendChild (img);
+        content.appendChild (anchor);
+      }
+      debug_text.innerHTML = "Done 6";
 
       // FIXME: we should probably not do this because we can't go
       // back in time to when we didn't have a user_id
@@ -58,7 +66,7 @@
       if (wave.getState ().get ('user_id')) {
         user_id = wave.getState ().get ('user_id');
         debug_text.innerHTML = "Fetching " + user_id;
-        callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=1");
+        callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=3");
       } else {
         user_id = null;
       }
