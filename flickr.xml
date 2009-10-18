@@ -6,7 +6,7 @@
 </ModulePrefs>
 <Content type="html">
 <![CDATA[
-    <div id="debug">not inited</div>
+    <!-- <div id="debug">not inited</div> -->
     <div id="content_div"></div>
     <div id="form">
       User ID: <input type=text value="28311604@N00" id="user_id">
@@ -15,14 +15,14 @@
     <script type="text/javascript">
 
     var api_key = "07b09f24ad41a2c8020a53fea673a618";
-    var debug_text = document.getElementById('debug');
+    //var debug_text = document.getElementById('debug');
     var content = document.getElementById('content_div');
     var user_id_input = document.getElementById('user_id');
 
     var have_content = false;
 
     function debugPrint (txt) {
-      debug_text.innerHTML = txt;
+      //debug_text.innerHTML = txt;
     }
 
     function callFlickr (method, args) {
