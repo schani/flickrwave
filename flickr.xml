@@ -48,7 +48,7 @@
     }
 
     function fetchFromNSID () {
-      wave.getState ().submitDelta ({'user_id': user_id_input.value, 'per_page': getPerPageFromInput ()});
+      wave.getState ().submitDelta ({'userId': user_id_input.value, 'per_page': getPerPageFromInput ()});
     }
 
     function fetchFromUsername () {
@@ -184,7 +184,7 @@
       debugPrint ("OK");
 
       if (rsp.user) {
-        wave.getState ().submitDelta ({'user_id': rsp.user.nsid, 'per_page': getPerPageFromInput ()});
+        wave.getState ().submitDelta ({'userId': rsp.user.nsid, 'per_page': getPerPageFromInput ()});
         return;
       }
 
@@ -231,9 +231,18 @@
       wave.getState ().submitDelta ({'page': page});
     }
 
+    function getUserId () {
+      var user_id = wave.getState ().get ('userId');
+      if (user_id)
+	return user_id;
+      user_id = wave.getState ().get ('user_id');
+      return user_id;
+    }
+
     function stateUpdated () {
-      if (wave.getState ().get ('user_id')) {
-        var user_id = wave.getState ().get ('user_id');
+      var user_id = getUserId ();
+      if (user_id) {
+        var user_id = getUserId ();
         var page = getPage ();
 	var per_page = getPerPage ();
         debugPrint ("Fetching " + user_id + " page " + page);
