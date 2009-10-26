@@ -9,19 +9,16 @@
     <!-- <div id="debug">not inited</div> -->
     <div id="content_div"></div>
     <div id="form">
-      Username: <input type=text value="schani" id="user_name">
-	<input type=button value="Go!" onClick="fetchFromUsername()"><br>
-      NSID: <input type=text value="28311604@N00" id="user_id">
-	<input type=button value="Go!" onClick="fetchFromNSID()"><br>
+      URL: <input type=text value="http://www.flickr.com/photos/schani/" id="url">
+        <input type=button value="Go!" onClick="fetchFromURL()"><br>
       Number of photos: <input type=text value="3" id="per_page">
     </div>
     <script type="text/javascript">
 
     var api_key = "07b09f24ad41a2c8020a53fea673a618";
     //var debug_text = document.getElementById('debug');
-    var content = document.getElementById('content_div');
-    var user_id_input = document.getElementById('user_id');
-    var user_name_input = document.getElementById('user_name');
+    var content = document.getElementById ('content_div');
+    var url_input = document.getElementById ('url');
     var per_page_input = document.getElementById ('per_page');
 
     var have_content = false;
@@ -48,12 +45,10 @@
       return per_page;
     }
 
-    function fetchFromNSID () {
-      wave.getState ().submitDelta ({'userId': user_id_input.value, 'per_page': getPerPageFromInput ()});
-    }
-
-    function fetchFromUsername () {
-      callFlickr ("flickr.people.findByUsername", "username=" + encodeURIComponent (user_name_input.value));
+    function fetchFromURL () {
+      var url = url_input.value;
+      debugPrint ("fetching URL " + url);
+      callFlickr ("flickr.urls.lookupUser", "url=" + encodeURIComponent (url));
     }
 
     function getPage () {
@@ -190,7 +185,12 @@
       debugPrint ("OK");
 
       if (rsp.user) {
-        wave.getState ().submitDelta ({'userId': rsp.user.nsid, 'per_page': getPerPageFromInput ()});
+	var nsid;
+	if (rsp.user.nsid)
+	  nsid = rsp.user.nsid;
+	else
+	  nsid = rsp.user.id;
+        wave.getState ().submitDelta ({'userId': nsid, 'per_page': getPerPageFromInput ()});
         return;
       }
 
