@@ -45,7 +45,9 @@
     }
 
     function fetchFromURL () {
-      handler = new UserHandler (url_input.value);
+      var url = url_input.value;
+      handler = new UserHandler ();
+      handler.setSourceURL (url);
     }
 
     function getWaveStateIntFunc (name, def) {
@@ -68,15 +70,15 @@
       return user_id;
     }
 
-    function UserHandler (url) {
+    function UserHandler () {
       this.num_photos = 0;
       this.content_dict = null;
       this.have_user_info = false;
+    }
 
-      if (url) {
-	debugPrint ("fetching URL " + url);
-	callFlickr ("flickr.urls.lookupUser", "url=" + encodeURIComponent (url));
-      }
+    UserHandler.prototype.setSourceURL = function (url) {
+      debugPrint ("fetching URL " + url);
+      callFlickr ("flickr.urls.lookupUser", "url=" + encodeURIComponent (url));
     }
 
     UserHandler.prototype.stateUpdated = function () {
@@ -264,7 +266,7 @@
       if (!handler) {
 	var user_id = getUserId ();
 	if (user_id) {
-	  handler = new UserHandler (null);
+	  handler = new UserHandler ();
 	}
       }
       if (handler) {
