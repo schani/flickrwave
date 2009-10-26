@@ -21,8 +21,7 @@
     var url_input = document.getElementById ('url');
     var per_page_input = document.getElementById ('per_page');
 
-    var have_content = false;
-    var num_photos = 0;
+    var handler = null;
 
     function debugPrint (txt) {
       //debug_text.innerHTML = txt;
@@ -46,9 +45,7 @@
     }
 
     function fetchFromURL () {
-      var url = url_input.value;
-      debugPrint ("fetching URL " + url);
-      callFlickr ("flickr.urls.lookupUser", "url=" + encodeURIComponent (url));
+      handler = new UserHandler (url_input.value);
     }
 
     function getWaveStateIntFunc (name, def) {
@@ -63,121 +60,128 @@
     var getPage = getWaveStateIntFunc ("page", 1);
     var getPerPage = getWaveStateIntFunc ("per_page", 3);
 
-    function createContent () {
-      dict = new Object ();
-      dict.anchors = new Array ();
-      dict.images = new Array ();
+    function getUserId () {
+      var user_id = wave.getState ().get ('userId');
+      if (user_id)
+	return user_id;
+      user_id = wave.getState ().get ('user_id');
+      return user_id;
+    }
 
-      var paragraph;
-      if (have_content) {
-        dict.buddy_anchor = document.getElementById ("buddy_anchor");
-        dict.buddy_image = document.getElementById ("buddy");
-        dict.buddy_name = document.getElementById ("buddy_name");
-      } else {
-        paragraph = document.createElement ("div");
-	content.appendChild (paragraph);
+    function UserHandler (url) {
+      this.num_photos = 0;
+      this.content_dict = null;
+      this.have_user_info = false;
 
-        var buddy_anchor = document.createElement ("a");
-        buddy_anchor.id = "buddy_anchor";
-        buddy_anchor.target = "_flickr";
-        dict.buddy_anchor = buddy_anchor;
-
-	var buddy_img = document.createElement ("img");
-	buddy_img.onload = function () { gadgets.window.adjustHeight (); }
-	buddy_img.id = "buddy";
-	buddy_img.hspace = 3;
-	buddy_img.vspace = 3;
-        buddy_img.align = "middle";
-        dict.buddy_image = buddy_img;
-
-        buddy_anchor.appendChild (buddy_img);
-	paragraph.appendChild (buddy_anchor);
-
-        var buddy_name = document.createElement ("font");
-        buddy_name.id = "buddy_name";
-        buddy_name.size = "+2";
-        paragraph.appendChild (buddy_name);
-        dict.buddy_name = buddy_name;
-
-        paragraph = document.createElement ("div");
-        content.appendChild (paragraph);
+      if (url) {
+	debugPrint ("fetching URL " + url);
+	callFlickr ("flickr.urls.lookupUser", "url=" + encodeURIComponent (url));
       }
+    }
+
+    UserHandler.prototype.stateUpdated = function () {
+      var user_id = getUserId ();
+      var page = getPage ();
+      var per_page = getPerPage ();
+      debugPrint ("Fetching " + user_id + " page " + page);
+      callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=" + per_page + "&page=" + page);
+      if (!this.have_user_info)
+	callFlickr ("flickr.people.getInfo", "user_id=" + encodeURIComponent (user_id));
+    }
+
+    UserHandler.prototype.updateStatus = function () {
+      if (!this.have_user_info)
+	return;
+
+      this.createContent ();
+
+      var page = getPage ();
+      var per_page = getPerPage ();
+      var first = (page - 1) * per_page + 1;
+      this.content_dict.counter.innerHTML = "" + first + "-" + (first+per_page-1) + " of " + this.num_photos + " photos ";
+    }
+
+    UserHandler.prototype.createContent = function () {
+      if (this.content_dict)
+	return;
+
+      this.content_dict = new Object ();
+      this.content_dict.anchors = new Array ();
+      this.content_dict.images = new Array ();
+
+      var paragraph = document.createElement ("div");
+      content.appendChild (paragraph);
+
+      var buddy_anchor = document.createElement ("a");
+      buddy_anchor.target = "_flickr";
+      this.content_dict.buddy_anchor = buddy_anchor;
+
+      var buddy_img = document.createElement ("img");
+      buddy_img.onload = function () { gadgets.window.adjustHeight (); }
+      buddy_img.hspace = 3;
+      buddy_img.vspace = 3;
+      buddy_img.align = "middle";
+      this.content_dict.buddy_image = buddy_img;
+
+      buddy_anchor.appendChild (buddy_img);
+      paragraph.appendChild (buddy_anchor);
+
+      var buddy_name = document.createElement ("font");
+      buddy_name.size = "+2";
+      paragraph.appendChild (buddy_name);
+      this.content_dict.buddy_name = buddy_name;
+
+      paragraph = document.createElement ("div");
+      content.appendChild (paragraph);
 
       var i;
       for (i = 0; i < getPerPage (); ++i) {
-	var anchor_id = "a_" + i;
-	var img_id = "img_" + i;
+        var anchor = document.createElement ("a");
+        anchor.target = "_flickr";
+	var img = document.createElement ("img");
+	img.onload = function () { gadgets.window.adjustHeight (); }
+        img.hspace = "3";
+        img.vspace = "3";
+        img.align = "middle";
+	anchor.appendChild (img);
+	paragraph.appendChild (anchor);
 
-	if (have_content) {
-	  dict.anchors [i] = document.getElementById (anchor_id);
-	  dict.images [i] = document.getElementById (img_id);
-	} else {
-          var anchor = document.createElement ("a");
-	  anchor.id = anchor_id;
-          anchor.target = "_flickr";
-	  var img = document.createElement ("img");
-	  img.onload = function () { gadgets.window.adjustHeight (); }
-	  img.id = img_id;
-          img.hspace = "3";
-          img.vspace = "3";
-          img.align = "middle";
-	  anchor.appendChild (img);
-	  paragraph.appendChild (anchor);
-
-	  dict.anchors [i] = anchor;
-	  dict.images [i] = img;
-	}
+	this.content_dict.anchors [i] = anchor;
+	this.content_dict.images [i] = img;
       }
 
-      if (have_content) {
-        dict.counter = document.getElementById ("counter");
-      } else {
-        paragraph = document.createElement ("div");
+      paragraph = document.createElement ("div");
 
-        var counter = document.createElement ("font");
-	counter.id = "counter";
-	counter.size = "-2";
-        paragraph.appendChild (counter);
-	dict.counter = counter;
+      var counter = document.createElement ("font");
+      counter.size = "-2";
+      paragraph.appendChild (counter);
+      this.content_dict.counter = counter;
 
-        var button = document.createElement ("input");
-        button.type = "button";
-        button.value = "<<";
-        button.onclick = function () { advance(-1); };
-        paragraph.appendChild (button);
-        button = document.createElement ("input");
-        button.type = "button";
-        button.value = ">>";
-        button.onclick = function () { advance(1); };
-        paragraph.appendChild (button);
-        button = document.createElement ("input");
-        button.type = "button";
-        button.value = "Random";
-        button.onclick = function () { jumpToRandom (); };
-        paragraph.appendChild (button);
-        content.appendChild (paragraph);
+      var button = document.createElement ("input");
+      var this_handler = this;
+      button.type = "button";
+      button.value = "<<";
+      button.onclick = function () { this_handler.advance (-1); };
+      paragraph.appendChild (button);
+      button = document.createElement ("input");
+      button.type = "button";
+      button.value = ">>";
+      button.onclick = function () { this_handler.advance (1); };
+      paragraph.appendChild (button);
+      button = document.createElement ("input");
+      button.type = "button";
+      button.value = "Random";
+      button.onclick = function () { this_handler.jumpToRandom (); };
+      paragraph.appendChild (button);
+      content.appendChild (paragraph);
 
-        // FIXME: we should probably not do this because we can't go
-        // back in time to when we didn't have a user_id
-        var form = document.getElementById ("form");
-        form.parentNode.removeChild (form);
-      }
+      var form = document.getElementById ("form");
+      form.parentNode.removeChild (form);
 
       gadgets.window.adjustHeight ();
-
-      have_content = true;
-
-      return dict;
     }
 
-    function jsonFlickrApi (rsp) {
-      if (rsp.stat != "ok") {
-        document.write("Error");
-        debugPrint ("Error!");
-	return;
-      }
-      debugPrint ("OK");
-
+    UserHandler.prototype.jsonFlickrApi = function (rsp) {
       if (rsp.user) {
 	var nsid;
 	if (rsp.user.nsid)
@@ -188,7 +192,7 @@
         return;
       }
 
-      var content_dict = createContent ();
+      this.createContent ();
 
       if (rsp.photos) {
         var index;
@@ -196,14 +200,14 @@
           var photo = rsp.photos.photo [index];
           var photo_url = "http://farm" + photo.farm + ".static.flickr.com/" + photo.server + "/" + photo.id + "_" + photo.secret + "_" + "m.jpg";
 
-    	var anchor = content_dict.anchors [index];
-    	var img = content_dict.images [index];
+    	var anchor = this.content_dict.anchors [index];
+    	var img = this.content_dict.images [index];
 
           img.src = photo_url;
           anchor.href = "http://www.flickr.com/photos/" + photo.owner + "/" + photo.id + "/";
         }
       } else if (rsp.person) {
-	content_dict.buddy_anchor.href = "http://www.flickr.com/photos/" + rsp.person.nsid + "/";
+	this.content_dict.buddy_anchor.href = "http://www.flickr.com/photos/" + rsp.person.nsid + "/";
 
 	var icon_server = parseInt (rsp.person.iconserver);
 	var icon_url;
@@ -211,27 +215,23 @@
           icon_url = "http://farm" + rsp.person.iconfarm + ".static.flickr.com/" + icon_server + "/buddyicons/" + rsp.person.nsid + ".jpg";
 	else
 	  icon_url = "http://www.flickr.com/images/buddyicon.jpg";
-	content_dict.buddy_image.src = icon_url;
+	this.content_dict.buddy_image.src = icon_url;
 
         var name;
         if (rsp.person.realname && rsp.person.realname._content)
           name = rsp.person.realname._content;
         else
           name = rsp.person.username._content;
-        content_dict.buddy_name.innerHTML = " " + name;
+        this.content_dict.buddy_name.innerHTML = " " + name;
 
-        var page = getPage ();
-	var per_page = getPerPage();
-        var first = (page - 1) * per_page + 1;
-	content_dict.counter.innerHTML = "" + first + "-" + (first+per_page-1) + " of " + rsp.person.photos.count._content + " photos ";
-
-	num_photos = rsp.person.photos.count._content;
+	this.num_photos = rsp.person.photos.count._content;
+	this.have_user_info = true;
       }
 
-      debugPrint ("Done 22");
+      this.updateStatus ();
     }
 
-    function advance (delta) {
+    UserHandler.prototype.advance = function (delta) {
       debugPrint ("Advancing " + delta);
       var page = getPage ();
       page += delta;
@@ -240,29 +240,35 @@
       wave.getState ().submitDelta ({'page': page});
     }
 
-    function jumpToRandom () {
-      var num_pages = Math.ceil (num_photos / getPerPage ());
+    UserHandler.prototype.jumpToRandom = function () {
+      debugPrint ("random");
+      var num_pages = Math.ceil (this.num_photos / getPerPage ());
       var random_page = Math.floor (num_pages * Math.random ());
       wave.getState ().submitDelta ({'page': random_page});
     }
 
-    function getUserId () {
-      var user_id = wave.getState ().get ('userId');
-      if (user_id)
-	return user_id;
-      user_id = wave.getState ().get ('user_id');
-      return user_id;
+    function jsonFlickrApi (rsp) {
+      if (rsp.stat != "ok") {
+	// FIXME: Give an error message - probably let the handler
+	// provide it
+        document.write("Error");
+        debugPrint ("Error!");
+	return;
+      }
+      debugPrint ("OK");
+      handler.jsonFlickrApi (rsp);
+      debugPrint ("Done 22");
     }
 
     function stateUpdated () {
-      var user_id = getUserId ();
-      if (user_id) {
-        var user_id = getUserId ();
-        var page = getPage ();
-	var per_page = getPerPage ();
-        debugPrint ("Fetching " + user_id + " page " + page);
-        callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=" + per_page + "&page=" + page);
-	callFlickr ("flickr.people.getInfo", "user_id=" + encodeURIComponent (user_id));
+      if (!handler) {
+	var user_id = getUserId ();
+	if (user_id) {
+	  handler = new UserHandler (null);
+	}
+      }
+      if (handler) {
+	handler.stateUpdated ();
       }
     }
 
