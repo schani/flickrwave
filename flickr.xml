@@ -220,7 +220,7 @@
 	content_dict.buddy_image.src = icon_url;
 
         var name;
-        if (rsp.person.realname)
+        if (rsp.person.realname && rsp.person.realname._content)
           name = rsp.person.realname._content;
         else
           name = rsp.person.username._content;
