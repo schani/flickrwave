@@ -9,7 +9,7 @@
     <!-- <div id="debug">not inited</div> -->
     <div id="content_div"></div>
     <div id="form">
-      URL: <input type=text value="http://www.flickr.com/photos/schani/" id="url">
+      URL: <input type=text value="http://www.flickr.com/photos/schani/" id="url" size="50">
         <input type=button value="Go!" onClick="fetchFromURL()"><br>
       Number of photos: <input type=text value="3" id="per_page">
     </div>
