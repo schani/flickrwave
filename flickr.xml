@@ -210,7 +210,14 @@
         }
       } else if (rsp.person) {
 	content_dict.buddy_anchor.href = "http://www.flickr.com/photos/" + rsp.person.nsid + "/";
-        content_dict.buddy_image.src = "http://farm" + rsp.person.iconfarm + ".static.flickr.com/" + rsp.person.iconserver + "/buddyicons/" + rsp.person.nsid + ".jpg";
+
+	var icon_server = parseInt (rsp.person.iconserver);
+	var icon_url;
+	if (icon_server > 0)
+          icon_url = "http://farm" + rsp.person.iconfarm + ".static.flickr.com/" + icon_server + "/buddyicons/" + rsp.person.nsid + ".jpg";
+	else
+	  icon_url = "http://www.flickr.com/images/buddyicon.jpg";
+	content_dict.buddy_image.src = icon_url;
 
         var name;
         if (rsp.person.realname)
