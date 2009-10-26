@@ -21,6 +21,8 @@
     var url_input = document.getElementById ('url');
     var per_page_input = document.getElementById ('per_page');
 
+    var generic_buddy_url = "http://www.flickr.com/images/buddyicon.jpg";
+
     var handler = null;
 
     function debugPrint (txt) {
@@ -31,10 +33,11 @@
       var url = "http://api.flickr.com/services/rest/?method=" + method + "&api_key=" + encodeURIComponent(api_key) + "&format=json";
       if (args)
         url += "&" + args;
-      var script = document.createElement("script");
-      script.setAttribute("src",url);
-      script.setAttribute("type","text/javascript");
-      document.body.appendChild(script);
+      var script = document.createElement ("script");
+      script.setAttribute ("src", url);
+      script.setAttribute ("type", "text/javascript");
+      debugPrint ("fetching url " + url);
+      document.body.appendChild (script);
     }
 
     function getPerPageFromInput () {
@@ -46,7 +49,10 @@
 
     function fetchFromURL () {
       var url = url_input.value;
-      handler = new UserHandler ();
+      if (url.match ("flickr.com/groups/"))
+	handler = new GroupHandler ();
+      else
+	handler = new UserHandler ();
       handler.setSourceURL (url);
     }
 
@@ -68,6 +74,10 @@
 	return user_id;
       user_id = wave.getState ().get ('user_id');
       return user_id;
+    }
+
+    function getGroupId () {
+      return wave.getState ().get ('groupId');
     }
 
     function StreamHandler () {
@@ -255,7 +265,7 @@
 	if (icon_server > 0)
           icon_url = "http://farm" + rsp.person.iconfarm + ".static.flickr.com/" + icon_server + "/buddyicons/" + rsp.person.nsid + ".jpg";
 	else
-	  icon_url = "http://www.flickr.com/images/buddyicon.jpg";
+	  icon_url = generic_buddy_url;
 	this.content_dict.icon_image.src = icon_url;
 
         var name;
@@ -272,11 +282,63 @@
       this.updateStatus ();
     }
 
+    function GroupHandler () {
+      StreamHandler.call (this);
+    }
+
+    GroupHandler.prototype = new StreamHandler ();
+
+    GroupHandler.prototype.setSourceURL = function (url) {
+      debugPrint ("fetching URL " + url);
+      callFlickr ("flickr.urls.lookupGroup", "url=" + encodeURIComponent (url));
+    }
+
+    GroupHandler.prototype.fetchStreamInfo = function () {
+      var group_id = getGroupId ();
+      debugPrint ("fetching group info " + group_id);
+      callFlickr ("flickr.groups.getInfo", "group_id=" + encodeURIComponent (group_id));
+    }
+
+    GroupHandler.prototype.fetchPage = function (page, per_page) {
+      var group_id = getGroupId ();
+      debugPrint ("Fetching group " + group_id + " page " + page);
+      callFlickr ("flickr.groups.pools.getPhotos", "group_id=" + encodeURIComponent (group_id) + "&per_page=" + per_page + "&page=" + page);
+    }
+
+    GroupHandler.prototype.jsonFlickrApi = function (rsp) {
+      if (rsp.group && !rsp.group.iconserver) {
+	wave.getState ().submitDelta ({'groupId': rsp.group.id, 'per_page': getPerPageFromInput ()});
+	return;
+      }
+
+      this.createContent ();
+
+      if (rsp.photos) {
+	this.populateFromPhotos (rsp.photos);
+	this.num_photos = parseInt (rsp.photos.total);
+      } else if (rsp.group) {
+	this.content_dict.icon_anchor.href = "http://www.flickr.com/groups/" + rsp.group.id + "/";
+
+	var icon_server = parseInt (rsp.group.iconserver);
+	var icon_url;
+	if (icon_server > 0)
+          icon_url = "http://farm" + rsp.group.iconfarm + ".static.flickr.com/" + icon_server + "/buddyicons/" + rsp.group.id + ".jpg";
+	else
+	  icon_url = generic_buddy_url;
+	this.content_dict.icon_image.src = icon_url;
+        this.content_dict.stream_name.innerHTML = " " + rsp.group.name._content;
+
+	this.have_stream_info = true;
+      }
+
+      this.updateStatus ();
+    }
+
     function jsonFlickrApi (rsp) {
       if (rsp.stat != "ok") {
 	// FIXME: Give an error message - probably let the handler
 	// provide it
-        document.write("Error");
+        //document.write("Error");
         debugPrint ("Error!");
 	return;
       }
@@ -287,9 +349,10 @@
 
     function stateUpdated () {
       if (!handler) {
-	var user_id = getUserId ();
-	if (user_id) {
+	if (getUserId ()) {
 	  handler = new UserHandler ();
+	} else if (getGroupId ()) {
+	  handler = new GroupHandler ();
 	}
       }
       if (handler) {
