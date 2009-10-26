@@ -51,23 +51,17 @@
       callFlickr ("flickr.urls.lookupUser", "url=" + encodeURIComponent (url));
     }
 
-    function getPage () {
-      var page = wave.getState ().get ("page");
-      if (!page)
-        page = 1;
-      else
-        page = parseInt (page);
-      return page;
+    function getWaveStateIntFunc (name, def) {
+      return function () {
+	var val = wave.getState ().get (name);
+	if (!val)
+	  return def;
+	return parseInt (val);
+      }
     }
 
-    function getPerPage () {
-      var per_page = wave.getState ().get ("per_page");
-      if (!per_page)
-        per_page = 3;
-      else
-        per_page = parseInt (per_page);
-      return per_page;
-    }
+    var getPage = getWaveStateIntFunc ("page", 1);
+    var getPerPage = getWaveStateIntFunc ("per_page", 3);
 
     function createContent () {
       dict = new Object ();
