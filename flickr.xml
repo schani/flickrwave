@@ -70,40 +70,23 @@
       return user_id;
     }
 
-    function UserHandler () {
+    function StreamHandler () {
       this.num_photos = 0;
       this.content_dict = null;
-      this.have_user_info = false;
+      this.have_stream_info = false;
     }
 
-    UserHandler.prototype.setSourceURL = function (url) {
-      debugPrint ("fetching URL " + url);
-      callFlickr ("flickr.urls.lookupUser", "url=" + encodeURIComponent (url));
-    }
-
-    UserHandler.prototype.stateUpdated = function () {
-      var user_id = getUserId ();
+    StreamHandler.prototype.stateUpdated = function () {
       var page = getPage ();
       var per_page = getPerPage ();
-      debugPrint ("Fetching " + user_id + " page " + page);
-      callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=" + per_page + "&page=" + page);
-      if (!this.have_user_info)
-	callFlickr ("flickr.people.getInfo", "user_id=" + encodeURIComponent (user_id));
+
+      this.fetchPage (page, per_page);
+
+      if (!this.have_stream_info)
+	this.fetchStreamInfo ();
     }
 
-    UserHandler.prototype.updateStatus = function () {
-      if (!this.have_user_info)
-	return;
-
-      this.createContent ();
-
-      var page = getPage ();
-      var per_page = getPerPage ();
-      var first = (page - 1) * per_page + 1;
-      this.content_dict.counter.innerHTML = "" + first + "-" + (first+per_page-1) + " of " + this.num_photos + " photos ";
-    }
-
-    UserHandler.prototype.createContent = function () {
+    StreamHandler.prototype.createContent = function () {
       if (this.content_dict)
 	return;
 
@@ -116,14 +99,14 @@
 
       var buddy_anchor = document.createElement ("a");
       buddy_anchor.target = "_flickr";
-      this.content_dict.buddy_anchor = buddy_anchor;
+      this.content_dict.icon_anchor = buddy_anchor;
 
       var buddy_img = document.createElement ("img");
       buddy_img.onload = function () { gadgets.window.adjustHeight (); }
       buddy_img.hspace = 3;
       buddy_img.vspace = 3;
       buddy_img.align = "middle";
-      this.content_dict.buddy_image = buddy_img;
+      this.content_dict.icon_image = buddy_img;
 
       buddy_anchor.appendChild (buddy_img);
       paragraph.appendChild (buddy_anchor);
@@ -131,7 +114,7 @@
       var buddy_name = document.createElement ("font");
       buddy_name.size = "+2";
       paragraph.appendChild (buddy_name);
-      this.content_dict.buddy_name = buddy_name;
+      this.content_dict.stream_name = buddy_name;
 
       paragraph = document.createElement ("div");
       content.appendChild (paragraph);
@@ -183,6 +166,72 @@
       gadgets.window.adjustHeight ();
     }
 
+    StreamHandler.prototype.updateStatus = function () {
+      if (!this.have_stream_info)
+	return;
+
+      this.createContent ();
+
+      var page = getPage ();
+      var per_page = getPerPage ();
+      var first = (page - 1) * per_page + 1;
+      this.content_dict.counter.innerHTML = "" + first + "-" + (first+per_page-1) + " of " + this.num_photos + " photos ";
+    }
+
+    StreamHandler.prototype.populateFromPhotos = function (photos) {
+      var index;
+      for (index in photos.photo) {
+        var photo = photos.photo [index];
+        var photo_url = "http://farm" + photo.farm + ".static.flickr.com/" + photo.server + "/" + photo.id + "_" + photo.secret + "_" + "m.jpg";
+
+    	var anchor = this.content_dict.anchors [index];
+    	var img = this.content_dict.images [index];
+
+        img.src = photo_url;
+        anchor.href = "http://www.flickr.com/photos/" + photo.owner + "/" + photo.id + "/";
+	// FIXME: also put title into alt
+      }
+    }
+
+    StreamHandler.prototype.advance = function (delta) {
+      debugPrint ("Advancing " + delta);
+      var page = getPage ();
+      page += delta;
+      if (page < 1)
+        page = 1;
+      wave.getState ().submitDelta ({'page': page});
+    }
+
+    StreamHandler.prototype.jumpToRandom = function () {
+      debugPrint ("random");
+      var num_pages = Math.ceil (this.num_photos / getPerPage ());
+      var random_page = Math.floor (num_pages * Math.random ());
+      wave.getState ().submitDelta ({'page': random_page});
+    }
+
+    function UserHandler () {
+      StreamHandler.call (this);
+    }
+
+    UserHandler.prototype = new StreamHandler ();
+
+    UserHandler.prototype.setSourceURL = function (url) {
+      debugPrint ("fetching URL " + url);
+      callFlickr ("flickr.urls.lookupUser", "url=" + encodeURIComponent (url));
+    }
+
+    UserHandler.prototype.fetchStreamInfo = function () {
+      var user_id = getUserId ();
+      debugPrint ("fetching user info " + user_id);
+      callFlickr ("flickr.people.getInfo", "user_id=" + encodeURIComponent (user_id));
+    }
+
+    UserHandler.prototype.fetchPage = function (page, per_page) {
+      var user_id = getUserId ();
+      debugPrint ("Fetching " + user_id + " page " + page);
+      callFlickr ("flickr.people.getPublicPhotos", "user_id=" + encodeURIComponent (user_id) + "&per_page=" + per_page + "&page=" + page);
+    }
+
     UserHandler.prototype.jsonFlickrApi = function (rsp) {
       if (rsp.user) {
 	var nsid;
@@ -197,19 +246,9 @@
       this.createContent ();
 
       if (rsp.photos) {
-        var index;
-        for (index in rsp.photos.photo) {
-          var photo = rsp.photos.photo [index];
-          var photo_url = "http://farm" + photo.farm + ".static.flickr.com/" + photo.server + "/" + photo.id + "_" + photo.secret + "_" + "m.jpg";
-
-    	var anchor = this.content_dict.anchors [index];
-    	var img = this.content_dict.images [index];
-
-          img.src = photo_url;
-          anchor.href = "http://www.flickr.com/photos/" + photo.owner + "/" + photo.id + "/";
-        }
+	this.populateFromPhotos (rsp.photos);
       } else if (rsp.person) {
-	this.content_dict.buddy_anchor.href = "http://www.flickr.com/photos/" + rsp.person.nsid + "/";
+	this.content_dict.icon_anchor.href = "http://www.flickr.com/photos/" + rsp.person.nsid + "/";
 
 	var icon_server = parseInt (rsp.person.iconserver);
 	var icon_url;
@@ -217,36 +256,20 @@
           icon_url = "http://farm" + rsp.person.iconfarm + ".static.flickr.com/" + icon_server + "/buddyicons/" + rsp.person.nsid + ".jpg";
 	else
 	  icon_url = "http://www.flickr.com/images/buddyicon.jpg";
-	this.content_dict.buddy_image.src = icon_url;
+	this.content_dict.icon_image.src = icon_url;
 
         var name;
         if (rsp.person.realname && rsp.person.realname._content)
           name = rsp.person.realname._content;
         else
           name = rsp.person.username._content;
-        this.content_dict.buddy_name.innerHTML = " " + name;
+        this.content_dict.stream_name.innerHTML = " " + name;
 
 	this.num_photos = rsp.person.photos.count._content;
-	this.have_user_info = true;
+	this.have_stream_info = true;
       }
 
       this.updateStatus ();
-    }
-
-    UserHandler.prototype.advance = function (delta) {
-      debugPrint ("Advancing " + delta);
-      var page = getPage ();
-      page += delta;
-      if (page < 1)
-        page = 1;
-      wave.getState ().submitDelta ({'page': page});
-    }
-
-    UserHandler.prototype.jumpToRandom = function () {
-      debugPrint ("random");
-      var num_pages = Math.ceil (this.num_photos / getPerPage ());
-      var random_page = Math.floor (num_pages * Math.random ());
-      wave.getState ().submitDelta ({'page': random_page});
     }
 
     function jsonFlickrApi (rsp) {
@@ -259,7 +282,7 @@
       }
       debugPrint ("OK");
       handler.jsonFlickrApi (rsp);
-      debugPrint ("Done 22");
+      debugPrint ("Handler done");
     }
 
     function stateUpdated () {
