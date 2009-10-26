@@ -22,6 +22,7 @@
     var per_page_input = document.getElementById ('per_page');
 
     var generic_buddy_url = "http://www.flickr.com/images/buddyicon.jpg";
+    var set_regexp = new RegExp ("flickr.com/photos/([^/]+)/sets/([^/]+)");
 
     var handler = null;
 
@@ -51,6 +52,8 @@
       var url = url_input.value;
       if (url.match ("flickr.com/groups/"))
 	handler = new GroupHandler ();
+      else if (set_regexp.test (url))
+	handler = new SetHandler ();
       else
 	handler = new UserHandler ();
       handler.setSourceURL (url);
@@ -78,6 +81,10 @@
 
     function getGroupId () {
       return wave.getState ().get ('groupId');
+    }
+
+    function getSetId () {
+      return wave.getState ().get ('setId');
     }
 
     function StreamHandler () {
@@ -197,8 +204,14 @@
     	var anchor = this.content_dict.anchors [index];
     	var img = this.content_dict.images [index];
 
+	var owner;
+	if (photo.owner)
+	  owner = photo.owner;
+	else
+	  owner = photo.ownername;
+
         img.src = photo_url;
-        anchor.href = "http://www.flickr.com/photos/" + photo.owner + "/" + photo.id + "/";
+        anchor.href = "http://www.flickr.com/photos/" + owner + "/" + photo.id + "/";
 	// FIXME: also put title into alt
       }
     }
@@ -340,6 +353,60 @@
       this.updateStatus ();
     }
 
+    function SetHandler () {
+      StreamHandler.call (this);
+    }
+
+    SetHandler.prototype = new StreamHandler ();
+
+    SetHandler.prototype.setSourceURL = function (url) {
+      var match = set_regexp.exec (url);
+      var set_id = match [2];
+      debugPrint ("got set id " + set_id + " out of " + url);
+      wave.getState ().submitDelta ({'setId': set_id, 'per_page': getPerPageFromInput ()});
+    }
+
+    SetHandler.prototype.fetchStreamInfo = function () {
+      var set_id = getSetId ();
+      debugPrint ("fetching set " + set_id);
+      callFlickr ("flickr.photosets.getInfo", "photoset_id=" + encodeURIComponent (set_id));
+    }
+
+    SetHandler.prototype.fetchPage = function (page, per_page) {
+      var set_id = getSetId ();
+      debugPrint ("Fetching set " + set_id + " page " + page);
+      callFlickr ("flickr.photosets.getPhotos", "photoset_id=" + encodeURIComponent (set_id) + "&per_page=" + per_page + "&page=" + page + "&extras=owner_name");
+    }
+
+    SetHandler.prototype.jsonFlickrApi = function (rsp) {
+      this.createContent ();
+
+      if (rsp.photoset && rsp.photoset.perpage) {
+	this.populateFromPhotos (rsp.photoset);
+	this.num_photos = parseInt (rsp.photoset.total);
+      } else if (rsp.photoset) {
+	var set_id = rsp.photoset.id;
+	var owner_nsid = rsp.photoset.owner;
+
+	this.content_dict.icon_anchor.href = "http://www.flickr.com/photos/" + owner_nsid + "/sets/" + set_id + "/";
+	this.content_dict.stream_name.innerHTML = rsp.photoset.title._content;
+
+	callFlickr ("flickr.people.getInfo", "user_id=" + encodeURIComponent (owner_nsid));
+
+	this.have_stream_info = true;
+      } else if (rsp.person) {
+	var icon_server = parseInt (rsp.person.iconserver);
+	var icon_url;
+	if (icon_server > 0)
+          icon_url = "http://farm" + rsp.person.iconfarm + ".static.flickr.com/" + icon_server + "/buddyicons/" + rsp.person.nsid + ".jpg";
+	else
+	  icon_url = generic_buddy_url;
+	this.content_dict.icon_image.src = icon_url;
+      }
+
+      this.updateStatus ();
+    }
+
     function jsonFlickrApi (rsp) {
       if (rsp.stat != "ok") {
 	// FIXME: Give an error message - probably let the handler
@@ -359,6 +426,8 @@
 	  handler = new UserHandler ();
 	} else if (getGroupId ()) {
 	  handler = new GroupHandler ();
+	} else if (getSetId ()) {
+	  handler = new SetHandler ();
 	}
       }
       if (handler) {
