@@ -203,19 +203,25 @@
       }
     }
 
+    StreamHandler.prototype.numPages = function () {
+      return Math.max (1, Math.ceil (Math.min (5000, this.num_photos) / getPerPage ()));
+    }
+
     StreamHandler.prototype.advance = function (delta) {
       debugPrint ("Advancing " + delta);
       var page = getPage ();
+      var max_page = this.numPages ();
       page += delta;
       if (page < 1)
         page = 1;
+      else if (page > max_page)
+	page = max_page;
       wave.getState ().submitDelta ({'page': page});
     }
 
     StreamHandler.prototype.jumpToRandom = function () {
       debugPrint ("random");
-      var num_pages = Math.ceil (this.num_photos / getPerPage ());
-      var random_page = Math.floor (num_pages * Math.random ());
+      var random_page = Math.floor (this.numPages () * Math.random ());
       wave.getState ().submitDelta ({'page': random_page});
     }
 
