@@ -234,7 +234,7 @@
 
     StreamHandler.prototype.jumpToRandom = function () {
       debugPrint ("random");
-      var random_page = Math.floor (this.numPages () * Math.random ());
+      var random_page = Math.floor (this.numPages () * Math.random ()) + 1;
       wave.getState ().submitDelta ({'page': random_page});
     }
 
