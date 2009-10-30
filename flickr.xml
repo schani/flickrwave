@@ -23,6 +23,7 @@
 
     var generic_buddy_url = "http://www.flickr.com/images/buddyicon.jpg";
     var set_regexp = new RegExp ("flickr.com/photos/([^/]+)/sets/([^/]+)");
+    var favs_regexp = new RegExp ("flickr.com/photos/([^/]+)/favorites");
 
     var handler = null;
 
@@ -54,6 +55,8 @@
 	handler = new GroupHandler ();
       else if (set_regexp.test (url))
 	handler = new SetHandler ();
+      else if (favs_regexp.test (url))
+	handler = new FavoritesHandler ();
       else
 	handler = new UserHandler ();
       handler.setSourceURL (url);
@@ -77,6 +80,10 @@
 	return user_id;
       user_id = wave.getState ().get ('user_id');
       return user_id;
+    }
+
+    function getFavoritesUserId () {
+      return wave.getState ().get ('favUserId');
     }
 
     function getGroupId () {
@@ -218,6 +225,30 @@
       }
     }
 
+    StreamHandler.prototype.populateBuddyFromPerson = function (person, name_modifier, link_modifier) {
+      var link = "http://www.flickr.com/photos/" + person.nsid + "/";
+      if (link_modifier)
+	link = link_modifier (link);
+      this.content_dict.icon_anchor.href = link;
+
+      var icon_server = parseInt (person.iconserver);
+      var icon_url;
+      if (icon_server > 0)
+        icon_url = "http://farm" + person.iconfarm + ".static.flickr.com/" + icon_server + "/buddyicons/" + person.nsid + ".jpg";
+      else
+	icon_url = generic_buddy_url;
+      this.content_dict.icon_image.src = icon_url;
+
+      var name;
+      if (person.realname && person.realname._content)
+        name = person.realname._content;
+      else
+        name = person.username._content;
+      if (name_modifier)
+	name = name_modifier (name);
+      this.content_dict.stream_name.innerHTML = " " + name;
+    }
+
     StreamHandler.prototype.numPages = function () {
       return Math.max (1, Math.ceil (Math.min (5000, this.num_photos) / getPerPage ()));
     }
@@ -279,23 +310,7 @@
       if (rsp.photos) {
 	this.populateFromPhotos (rsp.photos);
       } else if (rsp.person) {
-	this.content_dict.icon_anchor.href = "http://www.flickr.com/photos/" + rsp.person.nsid + "/";
-
-	var icon_server = parseInt (rsp.person.iconserver);
-	var icon_url;
-	if (icon_server > 0)
-          icon_url = "http://farm" + rsp.person.iconfarm + ".static.flickr.com/" + icon_server + "/buddyicons/" + rsp.person.nsid + ".jpg";
-	else
-	  icon_url = generic_buddy_url;
-	this.content_dict.icon_image.src = icon_url;
-
-        var name;
-        if (rsp.person.realname && rsp.person.realname._content)
-          name = rsp.person.realname._content;
-        else
-          name = rsp.person.username._content;
-        this.content_dict.stream_name.innerHTML = " " + name;
-
+	this.populateBuddyFromPerson (rsp.person);
 	this.num_photos = rsp.person.photos.count._content;
 	this.have_stream_info = true;
       }
@@ -409,6 +424,58 @@
       this.updateStatus ();
     }
 
+    function FavoritesHandler () {
+      StreamHandler.call (this);
+    }
+
+    FavoritesHandler.prototype = new StreamHandler ();
+
+    FavoritesHandler.prototype.setSourceURL = function (url) {
+      var match = favs_regexp.exec (url);
+      var user = match [1];
+      debugPrint ("got favorite user " + user + " out of " + url);
+      callFlickr ("flickr.urls.lookupUser", "url=" + encodeURIComponent ("http://www.flickr.com/photos/" + user + "/"));
+      wave.getState ().submitDelta ({'setId': set_id, 'per_page': getPerPageFromInput ()});
+    }
+
+    FavoritesHandler.prototype.fetchStreamInfo = function () {
+      var user_id = getFavoritesUserId ();
+      debugPrint ("fetching fav user info " + user_id);
+      callFlickr ("flickr.people.getInfo", "user_id=" + encodeURIComponent (user_id));
+    }
+
+    FavoritesHandler.prototype.fetchPage = function (page, per_page) {
+      var user_id = getFavoritesUserId ();
+      debugPrint ("Fetching " + user_id + " page " + page);
+      callFlickr ("flickr.favorites.getPublicList", "user_id=" + encodeURIComponent (user_id) + "&per_page=" + per_page + "&page=" + page + "&extras=owner_name");
+    }
+
+    FavoritesHandler.prototype.jsonFlickrApi = function (rsp) {
+      if (rsp.user) {
+	var nsid;
+	if (rsp.user.nsid)
+	  nsid = rsp.user.nsid;
+	else
+	  nsid = rsp.user.id;
+        wave.getState ().submitDelta ({'favUserId': nsid, 'per_page': getPerPageFromInput ()});
+        return;
+      }
+
+      this.createContent ();
+
+      if (rsp.photos) {
+	this.populateFromPhotos (rsp.photos);
+	this.num_photos = parseInt (rsp.photos.total);
+      } else if (rsp.person) {
+	this.populateBuddyFromPerson (rsp.person,
+				      function (name) { return "Favorites of " + name; },
+				      function (link) { return link + "favorites/"; });
+	this.have_stream_info = true;
+      }
+
+      this.updateStatus ();
+    }
+
     function jsonFlickrApi (rsp) {
       if (rsp.stat != "ok") {
 	// FIXME: Give an error message - probably let the handler
@@ -430,6 +497,8 @@
 	  handler = new GroupHandler ();
 	} else if (getSetId ()) {
 	  handler = new SetHandler ();
+	} else if (getFavoritesUserId ()) {
+	  handler = new FavoritesHandler ();
 	}
       }
       if (handler) {
