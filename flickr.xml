@@ -123,6 +123,7 @@
       buddy_img.hspace = 3;
       buddy_img.vspace = 3;
       buddy_img.align = "middle";
+      buddy_img.border = 0;
       this.content_dict.icon_image = buddy_img;
 
       buddy_anchor.appendChild (buddy_img);
@@ -142,9 +143,10 @@
         anchor.target = "_flickr";
 	var img = document.createElement ("img");
 	img.onload = function () { gadgets.window.adjustHeight (); }
-        img.hspace = "3";
-        img.vspace = "3";
+        img.hspace = 3;
+        img.vspace = 3;
         img.align = "middle";
+	img.border = 0;
 	anchor.appendChild (img);
 	paragraph.appendChild (anchor);
 
