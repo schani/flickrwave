@@ -441,6 +441,7 @@
       }
     }
     gadgets.util.registerOnLoadHandler(init);
+    </script>
   ]]>
   </Content>
 </Module>
