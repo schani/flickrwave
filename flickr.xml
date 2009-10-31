@@ -94,29 +94,21 @@
       return wave.getState ().get ('setId');
     }
 
-    function StreamHandler () {
-      this.num_photos = 0;
+    function Handler () {
       this.content_dict = null;
       this.have_stream_info = false;
     }
 
-    StreamHandler.prototype.stateUpdated = function () {
-      var page = getPage ();
-      var per_page = getPerPage ();
-
-      this.fetchPage (page, per_page);
-
+    Handler.prototype.stateUpdated = function () {
       if (!this.have_stream_info)
 	this.fetchStreamInfo ();
     }
 
-    StreamHandler.prototype.createContent = function () {
+    Handler.prototype.createContent = function () {
       if (this.content_dict)
 	return;
 
       this.content_dict = new Object ();
-      this.content_dict.anchors = new Array ();
-      this.content_dict.images = new Array ();
 
       var paragraph = document.createElement ("div");
       content.appendChild (paragraph);
@@ -141,7 +133,36 @@
       paragraph.appendChild (buddy_name);
       this.content_dict.stream_name = buddy_name;
 
-      paragraph = document.createElement ("div");
+      var form = document.getElementById ("form");
+      form.parentNode.removeChild (form);
+    }
+
+    function StreamHandler () {
+      Handler.call (this);
+      this.num_photos = 0;
+    }
+
+    StreamHandler.prototype = new Handler ();
+
+    StreamHandler.prototype.stateUpdated = function () {
+      var page = getPage ();
+      var per_page = getPerPage ();
+
+      this.fetchPage (page, per_page);
+
+      Handler.prototype.stateUpdated.call (this);
+    }
+
+    StreamHandler.prototype.createContent = function () {
+      if (this.content_dict)
+	return;
+
+      Handler.prototype.createContent.call (this);
+
+      this.content_dict.anchors = new Array ();
+      this.content_dict.images = new Array ();
+
+      var paragraph = document.createElement ("div");
       content.appendChild (paragraph);
 
       var i;
@@ -185,9 +206,6 @@
       button.onclick = function () { this_handler.jumpToRandom (); };
       paragraph.appendChild (button);
       content.appendChild (paragraph);
-
-      var form = document.getElementById ("form");
-      form.parentNode.removeChild (form);
 
       gadgets.window.adjustHeight ();
     }
