@@ -287,8 +287,9 @@
 	var owner = rsp.photo.owner.nsid;
 
 	this.content_dict.photo_image.src = photo_url;
+	if (rsp.photo.title)
+	  this.content_dict.photo_image.alt = rsp.photo.title._content;
 	this.content_dict.photo_anchor.href = "http://www.flickr.com/photos/" + owner + "/" + photo_id + "/";
-	// FIXME: also put title into alt
 
 	if (rsp.photo.title) {
 	  this.photo_name = rsp.photo.title._content;
@@ -398,8 +399,9 @@
 	  owner = photo.ownername;
 
         img.src = photo_url;
+	if (photo.title)
+	  img.alt = photo.title;
         anchor.href = "http://www.flickr.com/photos/" + owner + "/" + photo.id + "/";
-	// FIXME: also put title into alt
       }
     }
 
