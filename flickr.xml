@@ -453,7 +453,7 @@
       var user = match [1];
       debugPrint ("got favorite user " + user + " out of " + url);
       callFlickr ("flickr.urls.lookupUser", "url=" + encodeURIComponent ("http://www.flickr.com/photos/" + user + "/"));
-      wave.getState ().submitDelta ({'setId': set_id, 'per_page': getPerPageFromInput ()});
+      wave.getState ().submitDelta ({'per_page': getPerPageFromInput ()});
     }
 
     FavoritesHandler.prototype.fetchStreamInfo = function () {
