@@ -24,6 +24,7 @@
     var generic_buddy_url = "http://www.flickr.com/images/buddyicon.jpg";
     var set_regexp = new RegExp ("flickr.com/photos/([^/]+)/sets/([^/]+)");
     var favs_regexp = new RegExp ("flickr.com/photos/([^/]+)/favorites");
+    var photo_regexp = new RegExp ("flickr.com/photos/([^/]+)/([^/]+)");
 
     var handler = null;
 
@@ -57,6 +58,8 @@
 	handler = new SetHandler ();
       else if (favs_regexp.test (url))
 	handler = new FavoritesHandler ();
+      else if (photo_regexp.test (url))
+	handler = new PhotoHandler ();
       else
 	handler = new UserHandler ();
       handler.setSourceURL (url);
@@ -92,6 +95,10 @@
 
     function getSetId () {
       return wave.getState ().get ('setId');
+    }
+
+    function getPhotoId () {
+      return wave.getState ().get ('photoId');
     }
 
     function Handler () {
@@ -159,6 +166,96 @@
       if (name_modifier)
 	name = name_modifier (name);
       this.content_dict.stream_name.innerHTML = " " + name;
+    }
+
+    function PhotoHandler () {
+      Handler.call (this);
+      this.photo_name = "";
+    }
+
+    PhotoHandler.prototype = new Handler ();
+
+    PhotoHandler.prototype.setSourceURL = function (url) {
+      var match = photo_regexp.exec (url);
+      var user = match [1];
+      var photo_id = match [2];
+      debugPrint ("fetching photo URL " + url);
+      callFlickr ("flickr.urls.lookupUser", "url=" + encodeURIComponent ("http://www.flickr.com/photos/" + user + "/"));
+      wave.getState ().submitDelta ({'photoId': photo_id});
+    }
+
+    PhotoHandler.prototype.stateUpdated = function () {
+      Handler.prototype.stateUpdated.call (this);
+      var photo_id = getPhotoId ();
+      if (photo_id)
+	callFlickr ("flickr.photos.getInfo", "photo_id=" + encodeURIComponent (photo_id));
+    }
+
+    PhotoHandler.prototype.fetchStreamInfo = function () {
+      var user_id = getUserId ();
+      if (!user_id)
+	return;
+      debugPrint ("fetching user info " + user_id);
+      callFlickr ("flickr.people.getInfo", "user_id=" + encodeURIComponent (user_id));
+    }
+
+    PhotoHandler.prototype.createContent = function () {
+      if (this.content_dict)
+	return;
+
+      Handler.prototype.createContent.call (this);
+
+      var paragraph = document.createElement ("div");
+      content.appendChild (paragraph);
+
+      var anchor = document.createElement ("a");
+      anchor.target = "_flickr";
+      var img = document.createElement ("img");
+      img.onload = function () { gadgets.window.adjustHeight (); }
+      img.hspace = 3;
+      img.vspace = 3;
+      img.align = "middle";
+      img.border = 0;
+      anchor.appendChild (img);
+      paragraph.appendChild (anchor);
+
+      this.content_dict.photo_anchor = anchor;
+      this.content_dict.photo_image = img;
+    }
+
+    PhotoHandler.prototype.jsonFlickrApi = function (rsp) {
+      if (rsp.user) {
+	var nsid;
+	if (rsp.user.nsid)
+	  nsid = rsp.user.nsid;
+	else
+	  nsid = rsp.user.id;
+        wave.getState ().submitDelta ({'userId': nsid});
+        return;
+      }
+
+      this.createContent ();
+
+      if (rsp.person) {
+	var name = this.photo_name;
+	this.populateBuddyFromPerson (rsp.person,
+				      function () { return name; },
+				      function (link) { return link; });
+	this.have_stream_info = true;
+      } else if (rsp.photo) {
+	var photo_id = rsp.photo.id;
+        var photo_url = "http://farm" + rsp.photo.farm + ".static.flickr.com/" + rsp.photo.server + "/" + photo_id + "_" + rsp.photo.secret + "_" + "m.jpg";
+	var owner = rsp.photo.owner.nsid;
+
+	this.content_dict.photo_image.src = photo_url;
+	this.content_dict.photo_anchor.href = "http://www.flickr.com/photos/" + owner + "/" + photo_id + "/";
+	// FIXME: also put title into alt
+
+	if (rsp.photo.title) {
+	  this.photo_name = rsp.photo.title._content;
+	  this.content_dict.stream_name.innerHTML = this.photo_name;
+	}
+      }
     }
 
     function StreamHandler () {
@@ -509,7 +606,9 @@
 
     function stateUpdated () {
       if (!handler) {
-	if (getUserId ()) {
+	if (getPhotoId ()) {
+	  handler = new PhotoHandler ();
+	} else if (getUserId ()) {
 	  handler = new UserHandler ();
 	} else if (getGroupId ()) {
 	  handler = new GroupHandler ();

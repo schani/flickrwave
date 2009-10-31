@@ -1,7 +1,7 @@
 <extension
     name="FlickrWave"
     thumbnailUrl="http://github.com/schani/flickrwave/raw/master/logo120.png"
-    description="Browse Flickr photos from a user's stream, a photoset or a group.">
+    description="Display individual Flickr photos or browse photos from a user's stream, favorites, a photoset or a group.">
   <author name="Mark Probst"/>
   <menuHook location="toolbar" text="Add FlickrWave"
       iconUrl="http://github.com/schani/flickrwave/raw/master/logo24alpha.png">
