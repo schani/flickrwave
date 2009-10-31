@@ -11,7 +11,11 @@
     <div id="form">
       URL: <input type=text value="http://www.flickr.com/photos/schani/" id="url" size="50">
         <input type=button value="Go!" onClick="fetchFromURL()"><br>
-      Number of photos: <input type=text value="3" id="per_page">
+      Number of photos: <input type=text value="3" id="per_page"><br>
+      Size: <input type=radio name="size" value="square" id="size_square">Square
+            <input type=radio name="size" value="thumbnail" id="size_thumbnail">Thumbnail
+            <input type=radio name="size" value="small" id="size_small" checked="1">Small
+            <input type=radio name="size" value="medium" id="size_medium">Medium
     </div>
     <script type="text/javascript">
 
@@ -50,6 +54,27 @@
       return per_page;
     }
 
+    function getSizeFromInput () {
+      if (document.getElementById ('size_square').checked)
+	return "square";
+      else if (document.getElementById ('size_thumbnail').checked)
+	return "thumbnail";
+      else if (document.getElementById ('size_medium').checked)
+	return "medium";
+      else
+	return "small";
+    }
+
+    function getSuffixForSize (size) {
+      var suffixes = {"square": "_s", "thumbnail": "_t", "small": "_m", "medium": ""};
+      return suffixes [size];
+    }
+
+    function makePhotoURL (farm, server, id, secret) {
+      var suffix = getSuffixForSize (getSize ());
+      return "http://farm" + farm + ".static.flickr.com/" + server + "/" + id + "_" + secret +  suffix + ".jpg";
+    }
+
     function fetchFromURL () {
       var url = url_input.value;
       if (url.match ("flickr.com/groups/"))
@@ -63,6 +88,7 @@
       else
 	handler = new UserHandler ();
       handler.setSourceURL (url);
+      handler.setSize (getSizeFromInput ());
     }
 
     function getWaveStateIntFunc (name, def) {
@@ -101,9 +127,22 @@
       return wave.getState ().get ('photoId');
     }
 
+    function getSize () {
+      var size = wave.getState ().get ('size');
+      if (!size)
+	size = "small";
+      debugPrint ("size is now " + size);
+      return size;
+    }
+
     function Handler () {
       this.content_dict = null;
       this.have_stream_info = false;
+    }
+
+    Handler.prototype.setSize = function (size) {
+      debugPrint ("setting size " + size);
+      wave.getState ().submitDelta ({'size': size});
     }
 
     Handler.prototype.stateUpdated = function () {
@@ -244,7 +283,7 @@
 	this.have_stream_info = true;
       } else if (rsp.photo) {
 	var photo_id = rsp.photo.id;
-        var photo_url = "http://farm" + rsp.photo.farm + ".static.flickr.com/" + rsp.photo.server + "/" + photo_id + "_" + rsp.photo.secret + "_" + "m.jpg";
+        var photo_url = makePhotoURL (rsp.photo.farm, rsp.photo.server, photo_id, rsp.photo.secret);
 	var owner = rsp.photo.owner.nsid;
 
 	this.content_dict.photo_image.src = photo_url;
@@ -347,7 +386,7 @@
       var index;
       for (index in photos.photo) {
         var photo = photos.photo [index];
-        var photo_url = "http://farm" + photo.farm + ".static.flickr.com/" + photo.server + "/" + photo.id + "_" + photo.secret + "_" + "m.jpg";
+        var photo_url = makePhotoURL (photo.farm, photo.server, photo.id, photo.secret);
 
     	var anchor = this.content_dict.anchors [index];
     	var img = this.content_dict.images [index];
