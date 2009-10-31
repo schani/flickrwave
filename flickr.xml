@@ -137,6 +137,30 @@
       form.parentNode.removeChild (form);
     }
 
+    Handler.prototype.populateBuddyFromPerson = function (person, name_modifier, link_modifier) {
+      var link = "http://www.flickr.com/photos/" + person.nsid + "/";
+      if (link_modifier)
+	link = link_modifier (link);
+      this.content_dict.icon_anchor.href = link;
+
+      var icon_server = parseInt (person.iconserver);
+      var icon_url;
+      if (icon_server > 0)
+        icon_url = "http://farm" + person.iconfarm + ".static.flickr.com/" + icon_server + "/buddyicons/" + person.nsid + ".jpg";
+      else
+	icon_url = generic_buddy_url;
+      this.content_dict.icon_image.src = icon_url;
+
+      var name;
+      if (person.realname && person.realname._content)
+        name = person.realname._content;
+      else
+        name = person.username._content;
+      if (name_modifier)
+	name = name_modifier (name);
+      this.content_dict.stream_name.innerHTML = " " + name;
+    }
+
     function StreamHandler () {
       Handler.call (this);
       this.num_photos = 0;
@@ -241,30 +265,6 @@
         anchor.href = "http://www.flickr.com/photos/" + owner + "/" + photo.id + "/";
 	// FIXME: also put title into alt
       }
-    }
-
-    StreamHandler.prototype.populateBuddyFromPerson = function (person, name_modifier, link_modifier) {
-      var link = "http://www.flickr.com/photos/" + person.nsid + "/";
-      if (link_modifier)
-	link = link_modifier (link);
-      this.content_dict.icon_anchor.href = link;
-
-      var icon_server = parseInt (person.iconserver);
-      var icon_url;
-      if (icon_server > 0)
-        icon_url = "http://farm" + person.iconfarm + ".static.flickr.com/" + icon_server + "/buddyicons/" + person.nsid + ".jpg";
-      else
-	icon_url = generic_buddy_url;
-      this.content_dict.icon_image.src = icon_url;
-
-      var name;
-      if (person.realname && person.realname._content)
-        name = person.realname._content;
-      else
-        name = person.username._content;
-      if (name_modifier)
-	name = name_modifier (name);
-      this.content_dict.stream_name.innerHTML = " " + name;
     }
 
     StreamHandler.prototype.numPages = function () {
