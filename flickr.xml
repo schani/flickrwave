@@ -29,6 +29,7 @@
     var set_regexp = new RegExp ("flickr.com/photos/([^/]+)/sets/([^/]+)");
     var favs_regexp = new RegExp ("flickr.com/photos/([^/]+)/favorites");
     var photo_regexp = new RegExp ("flickr.com/photos/([^/]+)/([^/]+)");
+    var tag_regexp = new RegExp ("flickr.com/photos/([^/]+)/tags/([^/]+)");
 
     var handler = null;
 
@@ -83,6 +84,8 @@
 	handler = new SetHandler ();
       else if (favs_regexp.test (url))
 	handler = new FavoritesHandler ();
+      else if (tag_regexp.test (url))
+	handler = new UserTagHandler ();
       else if (photo_regexp.test (url))
 	handler = new PhotoHandler ();
       else
@@ -125,6 +128,10 @@
 
     function getPhotoId () {
       return wave.getState ().get ('photoId');
+    }
+
+    function getTag () {
+      return wave.getState ().get ('tag');
     }
 
     function getSize () {
@@ -632,6 +639,66 @@
       this.updateStatus ();
     }
 
+    function UserTagHandler () {
+      StreamHandler.call (this);
+    }
+
+    UserTagHandler.prototype = new StreamHandler ();
+
+    UserTagHandler.prototype.setSourceURL = function (url) {
+      var match = tag_regexp.exec (url);
+      this.user = match [1];
+      this.tag = match [2];
+    }
+
+    UserTagHandler.prototype.fetchStreamInfo = function () {
+      var user_id = getUserId ();
+      if (user_id) {
+	debugPrint ("fetching user info " + user_id);
+	callFlickr ("flickr.people.getInfo", "user_id=" + encodeURIComponent (user_id));
+      } else {
+	debugPrint ("looking up user " + this.user);
+	callFlickr ("flickr.urls.lookupUser", "url=" + encodeURIComponent ("http://www.flickr.com/photos/" + this.user + "/"));
+      }
+    }
+
+    UserTagHandler.prototype.fetchPage = function (page, per_page) {
+      var user_id = getUserId ();
+      var tag = getTag ();
+      if (!user_id)
+	return;
+      debugPrint ("Fetching user " + user_id + " tag " + tag + " page " + page);
+      callFlickr ("flickr.photos.search", "user_id=" + encodeURIComponent (user_id) + "&tags=" + encodeURIComponent (tag) + "&per_page=" + per_page + "&page=" + page + "&extras=owner_name");
+    }
+
+    UserTagHandler.prototype.jsonFlickrApi = function (rsp) {
+      if (rsp.user) {
+	var nsid;
+	if (rsp.user.nsid)
+	  nsid = rsp.user.nsid;
+	else
+	  nsid = rsp.user.id;
+        wave.getState ().submitDelta ({'userId': nsid, 'tag': this.tag, 'per_page': getPerPageFromInput ()});
+        return;
+      }
+
+      this.createContent ();
+
+      if (rsp.photos) {
+	this.populateFromPhotos (rsp.photos);
+	this.num_photos = parseInt (rsp.photos.total);
+      } else if (rsp.person) {
+	var tag = getTag ();
+	this.populateBuddyFromPerson (rsp.person,
+				      function (name) { return name + " / " + tag; },
+				      function (url) { return url + "/tags/" + tag + "/"; });
+	this.num_photos = rsp.person.photos.count._content;
+	this.have_stream_info = true;
+      }
+
+      this.updateStatus ();
+    }
+
     function jsonFlickrApi (rsp) {
       if (rsp.stat != "ok") {
 	// FIXME: Give an error message - probably let the handler
@@ -649,6 +716,8 @@
       if (!handler) {
 	if (getPhotoId ()) {
 	  handler = new PhotoHandler ();
+	} else if (getTag ()) {
+	  handler = new UserTagHandler ();
 	} else if (getUserId ()) {
 	  handler = new UserHandler ();
 	} else if (getGroupId ()) {
