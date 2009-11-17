@@ -392,6 +392,7 @@
 
     StreamHandler.prototype.populateFromPhotos = function (photos) {
       var index;
+      var owner = photos.owner;
       for (index in photos.photo) {
         var photo = photos.photo [index];
         var photo_url = makePhotoURL (photo.farm, photo.server, photo.id, photo.secret);
@@ -399,11 +400,8 @@
     	var anchor = this.content_dict.anchors [index];
     	var img = this.content_dict.images [index];
 
-	var owner;
 	if (photo.owner)
 	  owner = photo.owner;
-	else
-	  owner = photo.ownername;
 
         img.src = photo_url;
 	if (photo.title)
@@ -555,7 +553,7 @@
     SetHandler.prototype.fetchPage = function (page, per_page) {
       var set_id = getSetId ();
       debugPrint ("Fetching set " + set_id + " page " + page);
-      callFlickr ("flickr.photosets.getPhotos", "photoset_id=" + encodeURIComponent (set_id) + "&per_page=" + per_page + "&page=" + page + "&extras=owner_name");
+      callFlickr ("flickr.photosets.getPhotos", "photoset_id=" + encodeURIComponent (set_id) + "&per_page=" + per_page + "&page=" + page);
     }
 
     SetHandler.prototype.jsonFlickrApi = function (rsp) {
@@ -610,7 +608,7 @@
     FavoritesHandler.prototype.fetchPage = function (page, per_page) {
       var user_id = getFavoritesUserId ();
       debugPrint ("Fetching " + user_id + " page " + page);
-      callFlickr ("flickr.favorites.getPublicList", "user_id=" + encodeURIComponent (user_id) + "&per_page=" + per_page + "&page=" + page + "&extras=owner_name");
+      callFlickr ("flickr.favorites.getPublicList", "user_id=" + encodeURIComponent (user_id) + "&per_page=" + per_page + "&page=" + page);
     }
 
     FavoritesHandler.prototype.jsonFlickrApi = function (rsp) {
@@ -668,7 +666,7 @@
       if (!user_id)
 	return;
       debugPrint ("Fetching user " + user_id + " tag " + tag + " page " + page);
-      callFlickr ("flickr.photos.search", "user_id=" + encodeURIComponent (user_id) + "&tags=" + encodeURIComponent (tag) + "&per_page=" + per_page + "&page=" + page + "&extras=owner_name");
+      callFlickr ("flickr.photos.search", "user_id=" + encodeURIComponent (user_id) + "&tags=" + encodeURIComponent (tag) + "&per_page=" + per_page + "&page=" + page);
     }
 
     UserTagHandler.prototype.jsonFlickrApi = function (rsp) {
