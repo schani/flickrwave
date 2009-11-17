@@ -2,7 +2,7 @@
     name="FlickrWave"
     thumbnailUrl="http://github.com/schani/flickrwave/raw/master/logo120.png"
     description="Display individual Flickr photos or browse photos from a user's stream, favorites, a photoset or a group.">
-  <author name="Mark Probst"/>
+  <author name="Mark Probst" email="mark.probst@gmail.com"/>
   <menuHook location="toolbar" text="Add FlickrWave"
       iconUrl="http://github.com/schani/flickrwave/raw/master/logo24alpha.png">
     <insertGadget url="http://github.com/schani/flickrwave/raw/master/flickr.xml"/>
